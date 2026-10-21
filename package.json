@@ -1,23 +1,13 @@
 {
-  "name": "sim-productor-consumidor",
+  "name": "almacen-distribuido-rest",
   "version": "1.0.0",
-  "description": "Simulador de procesos (productor-consumidor) con planificacion Round Robin y sincronizacion por semaforos, servido en arquitectura cliente-servidor via WebSocket.",
-  "main": "server.js",
+  "description": "Almacén de una tienda repartido entre tres servidores REST, con varios clientes y un simulador en tiempo real para GitHub Pages.",
+  "main": "rest/nodo.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "start:socket-server": "node socket-server.js",
-    "start:socket-client": "node socket-client.js",
-    "start:node1": "node distribuido/warehouse-node.js N1",
-    "start:node2": "node distribuido/warehouse-node.js N2",
-    "start:node3": "node distribuido/warehouse-node.js N3",
-    "start:dist-client": "node distribuido/warehouse-client.js",
     "rest:node1": "node rest/nodo.js N1",
     "rest:node2": "node rest/nodo.js N2",
     "rest:node3": "node rest/nodo.js N3",
     "rest:cliente": "node rest/cliente.js"
-  },
-  "dependencies": {
-    "ws": "^8.18.0"
   }
 }
