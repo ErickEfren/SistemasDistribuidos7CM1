@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Almacén distribuido REST · simulación en tiempo real</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Segoe UI", Arial, sans-serif; background: #0f1117; color: #e6e6e6; margin: 0; padding: 18px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  h2 { font-size: 13px; margin: 0 0 10px; color: #8fb8ff; text-transform: uppercase; letter-spacing: .04em; }
+  .sub { color: #9aa0ab; font-size: 13px; margin: 0 0 14px; max-width: 920px; }
+  .panel { background: #171a22; border: 1px solid #262a35; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  .condiciones { font-size: 12px; color: #9aa0ab; display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  .condiciones b { color: #e6e6e6; }
+  .condiciones .evento { color: #ff9d9d; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stat { background: #11141b; border: 1px solid #262a35; border-radius: 6px; padding: 6px 12px; font-size: 12px; color: #9aa0ab; }
+  .stat b { display: block; font-size: 18px; color: #e6e6e6; }
+  .s201 b { color: #5cd08d; } .s409 b { color: #f0a35b; } .serr b { color: #ff6b6b; } .sret b { color: #e6d36b; } .srep b { color: #8fb8ff; }
+  #diagrama { width: 100%; height: auto; display: block; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .gridc { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  @media (max-width: 900px) { .grid3 { grid-template-columns: 1fr; } }
+  .nodo-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .nodo-nombre { font-weight: 600; }
+  .url { font-family: Consolas, monospace; font-size: 11px; color: #9aa0ab; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .pill.on { background: #1f4d3a; color: #b7f3d6; } .pill.off { background: #4d2323; color: #ffc7c7; }
+  .stock-row { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; }
+  .stock-bar { flex: 1; height: 9px; background: #21252f; border-radius: 5px; overflow: hidden; }
+  .stock-bar > div { height: 100%; background: #3d8bfd; transition: width .2s; }
+  .metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 10px; font-size: 12px; color: #9aa0ab; margin: 6px 0 8px; }
+  .metricas b { color: #e6e6e6; }
+  .consola { background: #0b0d12; border: 1px solid #21252f; border-radius: 6px; height: 190px; overflow-y: auto; font-family: Consolas, monospace; font-size: 11.5px; line-height: 1.5; padding: 6px 8px; overflow-wrap: anywhere; }
+  .l2xx { color: #8fdcb2; } .l409 { color: #f0b37b; } .l4xx { color: #e6d36b; } .l5xx, .lerr { color: #ff9d9d; }
+  .lsis { color: #8fb8ff; } .lcmd { color: #9aa0ab; } .lint { color: #e6d36b; }
+  .apagado .consola, .apagado .stock-row, .apagado .metricas { opacity: .45; }
+  .leyenda { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #9aa0ab; margin-top: 6px; }
+  .punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+  <h1>Almacén distribuido REST: simulación en tiempo real</h1>
+  <p class="sub">Tres servidores y cinco clientes corriendo en tu navegador con el mismo código del proyecto (<code>rest/servicio.js</code> y <code>rest/cliente-logica.js</code>). Nadie lo controla: los clientes compran por su cuenta, la red tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan solos, como pasaría en producción.</p>
+
+  <div class="panel condiciones" id="condiciones"></div>
+
+  <div class="panel">
+    <div class="stats">
+      <div class="stat s201">Despachados (201)<b id="sDesp">0</b></div>
+      <div class="stat s409">Rechazados por stock (409)<b id="sRech">0</b></div>
+      <div class="stat serr">Pedidos fallidos<b id="sErr">0</b></div>
+      <div class="stat sret">Reintentos<b id="sRet">0</b></div>
+      <div class="stat srep">Respuestas repetidas<b id="sRep">0</b></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Red</h2>
+    <svg id="diagrama" viewBox="0 0 1000 400" role="img" aria-label="Diagrama de servidores y clientes con mensajes en tránsito"></svg>
+    <div class="leyenda">
+      <span><span class="punto" style="background:#6ea8fe"></span>petición</span>
+      <span><span class="punto" style="background:#5cd08d"></span>respuesta 2xx</span>
+      <span><span class="punto" style="background:#f0a35b"></span>409 sin stock</span>
+      <span><span class="punto" style="background:#e6d36b"></span>otro 4xx</span>
+      <span><span class="punto" style="background:#ff6b6b"></span>5xx o conexión rechazada</span>
+      <span>✕ mensaje perdido</span>
+    </div>
+  </div>
+
+  <h2>Servidores</h2>
+  <div class="grid3" id="nodos"></div>
+
+  <h2 style="margin-top:6px">Clientes</h2>
+  <div class="gridc" id="clientes"></div>
+
+  <script src="../src/semaphore.js"></script>
+  <script src="../src/inventory.js"></script>
+  <script src="../rest/config.js"></script>
+  <script src="../rest/servicio.js"></script>
+  <script src="../rest/cliente-logica.js"></script>
+  <script src="red.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
