@@ -6,7 +6,7 @@ Proyecto de la materia de Sistemas Distribuidos. Un mismo problema, el inventari
 
 La versión REST corre completa en el navegador, en tiempo real, en GitHub Pages:
 
-**https://&lt;tu-usuario&gt;.github.io/&lt;tu-repositorio&gt;/simulador/**
+**https://erickefren.github.io/SistemasDistribuidos7CM4/simulador/**
 
 Tres servidores y cinco clientes funcionan solos, con el mismo código del proyecto (`rest/servicio.js` y `rest/cliente-logica.js`). La red simulada tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan sin que nadie intervenga. GitHub Pages no puede ejecutar Node, así que en esa página los servidores corren dentro del navegador. Las direcciones `http://127.0.0.1:7001` a `7003` son las de la versión real.
 
