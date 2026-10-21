@@ -10,7 +10,7 @@ El inventario de una tienda repartido entre tres servidores que se hablan por HT
 
 ## Simulación en línea
 
-**https://erickefren.github.io/SistemasDistribuidos7CM4/simulador/**
+**https://erickefren.github.io/SistemasDistribuidos7CM1/simulador/**
 
 Los tres servidores y cinco clientes corren dentro del navegador, en tiempo real y sin que nadie los controle. La red simulada tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan solos. La página usa el mismo código que la versión de Node (`rest/servicio.js` y `rest/cliente-logica.js`); lo único que cambia es por dónde viajan los mensajes.
 
