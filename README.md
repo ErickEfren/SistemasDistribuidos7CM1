@@ -14,6 +14,16 @@ El inventario de una tienda repartido entre tres servidores que se hablan por HT
 
 Los tres servidores y cinco clientes corren dentro del navegador, en tiempo real y sin que nadie los controle. La red simulada tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan solos. La página usa el mismo código que la versión de Node (`rest/servicio.js` y `rest/cliente-logica.js`); lo único que cambia es por dónde viajan los mensajes.
 
+La página es solo una simulación. El proyecto completo es la versión de Node que se describe abajo.
+
+### Instalarla como aplicación
+
+La simulación es una PWA: se puede instalar y funciona sin internet después de la primera visita.
+
+- **Chrome o Edge en computadora:** botón **Instalar aplicación** de la página, o el icono de instalar en la barra de direcciones.
+- **Android:** menú del navegador → **Instalar aplicación**.
+- **iPhone:** en Safari, **Compartir → Agregar a inicio**.
+
 ## Cómo correrlo en tu computadora
 
 Requisito: Node.js 18 o más reciente. No hay dependencias externas.
@@ -63,6 +73,7 @@ Códigos de respuesta de `POST /pedidos`: 201 despachado, 409 sin stock suficien
 | `rest/config.js` | Los tres servidores, sus puertos y su producto. |
 | `src/` | Semáforo e inventario que usa cada servidor para proteger su stock. |
 | `simulador/` | La página de GitHub Pages: red simulada, servidores y clientes en el navegador. |
+| `simulador/manifest.webmanifest`, `sw.js`, `pwa.js`, `iconos/` | Lo que la convierte en PWA: datos de instalación, funcionamiento sin internet e iconos. |
 
 ## Limitaciones
 

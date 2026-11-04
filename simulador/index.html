@@ -4,6 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Almacén distribuido REST · simulación en tiempo real</title>
+<meta name="description" content="Simulación en tiempo real de tres servidores REST y cinco clientes. Funciona sin internet." />
+<meta name="theme-color" content="#0f1117" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png" />
+<link rel="apple-touch-icon" href="iconos/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-title" content="Almacén REST" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black" />
 <style>
   * { box-sizing: border-box; }
   body { font-family: "Segoe UI", Arial, sans-serif; background: #0f1117; color: #e6e6e6; margin: 0; padding: 18px 16px 40px; }
@@ -11,6 +20,9 @@
   h2 { font-size: 13px; margin: 0 0 10px; color: #8fb8ff; text-transform: uppercase; letter-spacing: .04em; }
   .sub { color: #9aa0ab; font-size: 13px; margin: 0 0 14px; max-width: 920px; }
   .panel { background: #171a22; border: 1px solid #262a35; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  .pwa { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 12px; color: #9aa0ab; margin: 0 0 14px; }
+  .pwa button { background: #2f5d8a; color: #e6e6e6; border: 1px solid #3d76ad; border-radius: 6px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+  .pwa button:hover { background: #3a72a8; }
   .condiciones { font-size: 12px; color: #9aa0ab; display: flex; flex-wrap: wrap; gap: 6px 22px; }
   .condiciones b { color: #e6e6e6; }
   .condiciones .evento { color: #ff9d9d; }
@@ -43,6 +55,11 @@
 <body>
   <h1>Almacén distribuido REST: simulación en tiempo real</h1>
   <p class="sub">Tres servidores y cinco clientes corriendo en tu navegador con el mismo código del proyecto (<code>rest/servicio.js</code> y <code>rest/cliente-logica.js</code>). Nadie lo controla: los clientes compran por su cuenta, la red tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan solos, como pasaría en producción.</p>
+
+  <div class="pwa">
+    <span id="estadoPwa"></span>
+    <button id="instalar" hidden>Instalar aplicación</button>
+  </div>
 
   <div class="panel condiciones" id="condiciones"></div>
 
@@ -82,5 +99,6 @@
   <script src="../rest/cliente-logica.js"></script>
   <script src="red.js"></script>
   <script src="app.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>
