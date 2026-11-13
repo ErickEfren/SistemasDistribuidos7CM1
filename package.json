@@ -1,13 +1,15 @@
 {
-  "name": "almacen-distribuido-rest",
-  "version": "1.0.0",
-  "description": "Almacén de una tienda repartido entre tres servidores REST, con varios clientes y un simulador en tiempo real para GitHub Pages.",
-  "main": "rest/nodo.js",
+  "name": "almacen-microservicios",
+  "version": "3.0.0",
+  "description": "Almacén de una tienda con microservicios: gateway, catálogo, inventario, pedidos y pagos, con un front web conectado al gateway.",
+  "main": "microservicios/iniciar.js",
   "type": "commonjs",
   "scripts": {
-    "rest:node1": "node rest/nodo.js N1",
-    "rest:node2": "node rest/nodo.js N2",
-    "rest:node3": "node rest/nodo.js N3",
-    "rest:cliente": "node rest/cliente.js"
+    "start": "node microservicios/iniciar.js",
+    "start:gateway": "node microservicios/gateway/index.js",
+    "start:catalogo": "node microservicios/catalogo/index.js",
+    "start:inventario": "node microservicios/inventario/index.js",
+    "start:pedidos": "node microservicios/pedidos/index.js",
+    "start:pagos": "node microservicios/pagos/index.js"
   }
 }

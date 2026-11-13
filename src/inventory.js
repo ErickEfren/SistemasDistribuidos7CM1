@@ -16,6 +16,11 @@ class Inventory {
     return { fulfilled: false, remaining: available };
   }
 
+  release(order) {
+    this.stock[order.product] = (this.stock[order.product] ?? 0) + order.qty;
+    return { remaining: this.stock[order.product] };
+  }
+
   snapshot() {
     return { stock: { ...this.stock }, fulfilled: this.fulfilled, rejected: this.rejected };
   }

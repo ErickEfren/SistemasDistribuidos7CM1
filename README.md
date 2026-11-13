@@ -1,80 +1,96 @@
-# Almacén distribuido REST
+# Almacén con microservicios
 
-El inventario de una tienda repartido entre tres servidores que se hablan por HTTP. Cada servidor es dueño de un producto, y cualquier cliente puede pedir cualquier producto entrando por cualquiera de ellos: si el producto no es de ese servidor, el servidor reenvía el pedido a su dueño y devuelve la respuesta.
+El almacén de una tienda dividido en servicios pequeños, cada uno con una sola responsabilidad, sus propios datos y su propio proceso. Se comunican solo por HTTP con JSON. Un gateway es la única puerta de entrada y sirve un front web que habla con los servicios reales.
 
-| Servidor | Dirección | Producto |
-|---|---|---|
-| N1 · Almacén Norte | `http://127.0.0.1:7001` | Manzanas |
-| N2 · Almacén Centro | `http://127.0.0.1:7002` | Peras |
-| N3 · Almacén Sur | `http://127.0.0.1:7003` | Bananas |
+```mermaid
+flowchart LR
+  navegador[Front web] --> gateway[Gateway :8080]
+  gateway --> catalogo[Catálogo :8081]
+  gateway --> inventario[Inventario :8082]
+  gateway --> pedidos[Pedidos :8083]
+  pedidos --> catalogo
+  pedidos --> inventario
+  pedidos --> pagos[Pagos :8084]
+```
 
-## Simulación en línea
+| Servicio | Puerto | Responsabilidad | Datos que guarda |
+|---|---|---|---|
+| Gateway | 8080 | Única entrada para el navegador. Sirve el front, reparte las peticiones y junta catálogo con inventario. | Ninguno |
+| Catálogo | 8081 | Qué productos existen y su precio. | Productos |
+| Inventario | 8082 | Cuántas unidades hay. Reserva, libera y confirma mercancía. | Existencias y reservas |
+| Pedidos | 8083 | Coordina cada compra entre los demás servicios. | Pedidos y su historial de pasos |
+| Pagos | 8084 | Aprueba o rechaza el cobro (límite de 100 MXN por compra). | Pagos |
 
-**https://erickefren.github.io/SistemasDistribuidos7CM1/simulador/**
-
-Los tres servidores y cinco clientes corren dentro del navegador, en tiempo real y sin que nadie los controle. La red simulada tiene retrasos y pierde mensajes, y los servidores se caen y se recuperan solos. La página usa el mismo código que la versión de Node (`rest/servicio.js` y `rest/cliente-logica.js`); lo único que cambia es por dónde viajan los mensajes.
-
-La página es solo una simulación. El proyecto completo es la versión de Node que se describe abajo.
-
-### Instalarla como aplicación
-
-La simulación es una PWA: se puede instalar y funciona sin internet después de la primera visita.
-
-- **Chrome o Edge en computadora:** botón **Instalar aplicación** de la página, o el icono de instalar en la barra de direcciones.
-- **Android:** menú del navegador → **Instalar aplicación**.
-- **iPhone:** en Safari, **Compartir → Agregar a inicio**.
-
-## Cómo correrlo en tu computadora
+## Cómo correrlo
 
 Requisito: Node.js 18 o más reciente. No hay dependencias externas.
 
-Un servidor por terminal:
-
 ```bash
-npm run rest:node1
-npm run rest:node2
-npm run rest:node3
+npm start
 ```
 
-Y uno o más clientes, indicando el servidor de entrada y un nombre:
+Levanta los cinco servicios. Abre **http://127.0.0.1:8080** en el navegador. En PowerShell, si aparece el error de "ejecución de scripts deshabilitada", usa `npm.cmd start`.
+
+También se puede levantar cada servicio por separado, en su propia terminal, para apagar uno y ver cómo responde el resto:
 
 ```bash
-npm run rest:cliente -- N1 Ana
+npm run start:catalogo
+npm run start:inventario
+npm run start:pagos
+npm run start:pedidos
+npm run start:gateway
 ```
 
-En el cliente se escribe `order Peras 2`, `pedido N2-1`, `stock` o `salir`. En PowerShell, si aparece el error de "ejecución de scripts deshabilitada", usa `npm.cmd` en lugar de `npm`.
+Las direcciones entre servicios se pueden cambiar con las variables `CATALOGO_URL`, `INVENTARIO_URL`, `PEDIDOS_URL` y `PAGOS_URL`, el puerto con `PORT` y la interfaz con `HOST`, por ejemplo para desplegarlos en servidores distintos.
 
-También se puede usar cualquier cliente HTTP:
+## Cómo se hace una compra
 
-```bash
-curl -X POST http://127.0.0.1:7001/pedidos -H "Content-Type: application/json" -d "{\"producto\":\"Peras\",\"cantidad\":2}"
-```
+El servicio de pedidos sigue estos pasos y, si alguno falla, deshace los anteriores en lugar de bloquear a todos (patrón saga):
 
-## API
+1. Pregunta al catálogo si el producto existe y su precio.
+2. Pide al inventario que reserve las unidades.
+3. Pide a pagos que cobre.
+4. Si el cobro se aprueba, confirma la reserva. Si se rechaza o pagos no está disponible, libera la reserva.
+
+| Estado del pedido | Código | Cuándo pasa |
+|---|---|---|
+| `CONFIRMADO` | 201 | Hubo stock y el pago se aprobó. |
+| `RECHAZADO_SIN_STOCK` | 409 | No había unidades suficientes. |
+| `PAGO_RECHAZADO` | 402 | El cobro se rechazó; la reserva se liberó. |
+| `FALLIDO` | 503 | Inventario o pagos no estaban disponibles; si había reserva, se liberó. |
+| `PENDIENTE` | 202 | Pagos no respondió a tiempo y no se sabe si cobró; la reserva se mantiene. |
+
+Cada petición lleva una cabecera `x-request-id` que se pasa de servicio en servicio, así que en la consola se puede seguir una compra completa por todos los servicios. `POST /api/pedidos` acepta `Idempotency-Key` para reintentar sin duplicar el pedido.
+
+## API del gateway
 
 | Método y ruta | Qué hace |
 |---|---|
-| `GET /` | Describe el servidor, sus vecinos y sus endpoints. |
-| `GET /salud` | Indica que el servidor está vivo. |
-| `GET /inventario` | Inventario local del servidor. |
-| `GET /stock` | Inventario de los tres servidores (`completo: false` si alguno no responde). |
-| `POST /pedidos` | Crea un pedido. Acepta la cabecera `Idempotency-Key` para reintentar sin duplicar. |
-| `GET /pedidos/{id}` | Consulta un pedido, aunque lo guarde otro servidor. |
+| `GET /` | Front web. |
+| `GET /api/salud` | Estado de cada servicio. |
+| `GET /api/productos` | Catálogo con existencias (si inventario no responde, llega sin existencias). |
+| `POST /api/pedidos` | Crea un pedido: `{"producto":"peras","cantidad":2,"cliente":"Ana"}`. |
+| `GET /api/pedidos` | Últimos pedidos. |
+| `GET /api/pedidos/{id}` | Un pedido con sus pasos. |
 
-Códigos de respuesta de `POST /pedidos`: 201 despachado, 409 sin stock suficiente, 400 datos inválidos, 404 producto desconocido, 421 reenvío a un servidor que no es dueño, 502 el dueño no está disponible, 504 el dueño no respondió en 2 segundos.
+```bash
+curl -X POST http://127.0.0.1:8080/api/pedidos -H "Content-Type: application/json" -d "{\"producto\":\"peras\",\"cantidad\":2,\"cliente\":\"Ana\"}"
+```
 
 ## Estructura
 
 | Ruta | Contenido |
 |---|---|
-| `rest/servicio.js` | Lógica de un servidor: rutas, pedidos, reenvío, idempotencia e inventario global. |
-| `rest/cliente-logica.js` | Lógica del cliente: reintentos con la misma clave y mensajes de salida. |
-| `rest/nodo.js`, `rest/cliente.js` | Servidor HTTP y cliente de consola para Node. |
-| `rest/config.js` | Los tres servidores, sus puertos y su producto. |
-| `src/` | Semáforo e inventario que usa cada servidor para proteger su stock. |
-| `simulador/` | La página de GitHub Pages: red simulada, servidores y clientes en el navegador. |
-| `simulador/manifest.webmanifest`, `sw.js`, `pwa.js`, `iconos/` | Lo que la convierte en PWA: datos de instalación, funcionamiento sin internet e iconos. |
+| `microservicios/iniciar.js` | Levanta los cinco servicios con un solo comando. |
+| `microservicios/config.js` | Puertos y direcciones de cada servicio. |
+| `microservicios/lib/http.js` | Base común: servidor HTTP, rutas, errores y llamadas entre servicios con tiempo de espera. |
+| `microservicios/<servicio>/index.js` | Cada servicio. |
+| `microservicios/gateway/public/` | El front web. |
+| `src/` | Semáforo e inventario que usa el servicio de inventario. |
+| `version-pwa.zip` | La versión anterior: tres servidores REST y su simulador como PWA, completa y lista para descomprimir. |
+
+Las versiones anteriores también están en las etiquetas `v1.0-simulador` y `v2.0-pwa`.
 
 ## Limitaciones
 
-El estado vive en memoria, así que un servidor que se reinicia vuelve a su inventario inicial. Cada producto tiene un solo servidor dueño, y si ese servidor cae, su producto no se puede pedir. No hay autenticación.
+Cada servicio guarda sus datos en memoria, así que al reiniciarse vuelve a su estado inicial. Los pedidos en estado `PENDIENTE` no se revisan solos. No hay autenticación.
